@@ -5,14 +5,19 @@ import firebase from "firebase/app";
 
 export default function ChatScreen({ route }) {
   const [messages, setMessages] = useState([]);
+  const { chatname } = route.params;
 
   useEffect(() => {
     let unsubscribeFromNewSnapshots = db
       .collection("Chats")
-      .doc(route.params.chatname)
+      .doc(chatname)
       .onSnapshot((snapshot) => {
+        let newMessages = snapshot.data().messages.map((singleMessage) =>{
+            singleMessage.createdAt = singleMessage.createdAt.seconds * 1000; // converting firebase nanoseconds to miliseconds for unix
+            return singleMessage; //needs to return message to work
+        }) 
         console.log("New Snapshot!");
-        setMessages(snapshot.data().messages);
+        setMessages(newMessages);
       });
 
     return function cleanupBeforeUnmounting() {
@@ -22,7 +27,7 @@ export default function ChatScreen({ route }) {
 
   const onSend = useCallback((messages = []) => {
     db.collection("Chats")
-      .doc(route.params.chatname)
+      .doc(chatname)
       .update({
         // arrayUnion appends the message to the existing array
         messages: firebase.firestore.FieldValue.arrayUnion(messages[0]),
@@ -38,11 +43,12 @@ export default function ChatScreen({ route }) {
       onSend={(messages) => onSend(messages)}
       user={{
         // current "blue bubble" user
-        _id: "1",
-        name: "Ashwin",
-        avatar: "https://placeimg.com/140/140/any",
+        _id: firebase.auth().currentUser.uid,
+        name: firebase.auth().currentUser.displayName,
+        avatar: "https://www.thesprucepets.com/thmb/uc2gXpMNpSegoPUHMNHTC5BGQtQ=/1080x1075/filters:no_upscale():max_bytes(150000):strip_icc()/19933184_104417643500613_5541725731421159424_n-5ba0548546e0fb0050edecc0.jpg",
+        // ex: using require; avatar: require("../assets/photo.png”),
       }}
-      inverted={true}
+      inverted={false}
       showUserAvatar={true}
       renderUsernameOnMessage={true}
     />
