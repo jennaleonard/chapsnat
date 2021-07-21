@@ -9,6 +9,7 @@ import LoginScreen from "./screens/LoginScreen";
 import SignupScreen from "./screens/SignupScreen";
 import BottomTabNavigator from "./navigation/BottomTabNavigator";
 import firebase from "@firebase/app";
+import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 
 const Stack = createStackNavigator();
 
@@ -25,25 +26,27 @@ function App() {
   },[]);
 
   return (
-    <View style={styles.container}>
-      <NavigationContainer>
-        <Stack.Navigator initialRouteName="Tabs">
-          {isSignedIn ? (
-            <>
-            <Stack.Screen name="Tabs" component={BottomTabNavigator} />
-            <Stack.Screen name="Chat" component={ChatScreen} />
+    <ActionSheetProvider>
+      <View style={styles.container}>
+        <NavigationContainer>
+          <Stack.Navigator initialRouteName="Tabs">
+            {isSignedIn ? (
+              <>
+              <Stack.Screen name="Tabs" component={BottomTabNavigator} />
+              <Stack.Screen name="Chat" component={ChatScreen} />
+              </>
+            ) : (
+              <>
+              <Stack.Screen name="Login" component={LoginScreen} options={{headerShown: false}}/>
+              <Stack.Screen name="Signup" component={SignupScreen} />
             </>
-          ) : (
-            <>
-            <Stack.Screen name="Login" component={LoginScreen} options={{headerShown: false}}/>
-            <Stack.Screen name="Signup" component={SignupScreen} />
-          </>
-          )}
+            )}
 
-        </Stack.Navigator>
-        <StatusBar style="auto" />
-      </NavigationContainer>
-    </View>
+          </Stack.Navigator>
+          <StatusBar style="auto" />
+        </NavigationContainer>
+      </View>
+    </ActionSheetProvider>
   );
 }
 

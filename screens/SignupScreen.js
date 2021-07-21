@@ -6,6 +6,7 @@ import {
     Button,
     Image,
     Alert,
+    TouchableOpacity,
   } from "react-native";
   
   import React, { useState, useEffect } from "react";
@@ -57,6 +58,7 @@ import {
         title="Sign Up"
         color={Colors.snapblue}
         accessibilityLabel="Sign up"
+        style={styles.buttonContainer}
       />
     </View>
   );
@@ -80,5 +82,15 @@ const styles = StyleSheet.create({
   buttonText: {
     marginLeft: offset,
     fontSize: 42,
+  },
+  buttonContainer: {
+    height: 45,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+    width: 40,
+    borderRadius: 30,
+    backgroundColor: Colors.snapblue,
   },
 });
