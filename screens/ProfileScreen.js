@@ -1,20 +1,16 @@
 import firebase from "@firebase/app";
+import "@firebase/storage";
 import React, { useState } from "react";
 import Colors from "../constants/Colors";
-import {
-  Image,
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  Platform,
-} from "react-native";
+import { Image, StyleSheet, Text, View, TouchableOpacity, Platform } from "react-native";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import * as ImagePicker from "expo-image-picker";
+
 export default function ProfileScreen() {
-  const { showActionSheetWithOptions } = useActionSheet();
-  const [imageURI, setImageURI] = useState(null);
   var user = firebase.auth().currentUser;
+  const { showActionSheetWithOptions } = useActionSheet();
+  const [imageURI, setImageURI] = useState(user.photoURL);
+
   const onPressLogout = async () => {
     await firebase
       .auth()
@@ -28,6 +24,24 @@ export default function ProfileScreen() {
         alert(error.message);
       });
   };
+
+  const onEditAvatar = () => {
+    showActionSheetWithOptions(
+      {
+        options: ["Camera", "Image Library", "Cancel"],
+        cancelButtonIndex: 2,
+      },
+      (buttonIndex) => {
+        if (buttonIndex == 0) {
+          handleCamera();
+        } else if (buttonIndex == 1) {
+          handleLibrary();
+        }
+        console.log(buttonIndex);
+      }
+    );
+  };
+
   const handleCamera = async () => {
     if (Platform.OS !== "web") {
       let permissions = await ImagePicker.getCameraPermissionsAsync();
@@ -38,32 +52,72 @@ export default function ProfileScreen() {
         }
       }
     }
+
     let result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
     });
     if (!result.cancelled) {
-      console.log(result.uri);
+      console.log(result);
       setImageURI(result.uri);
+      uploadAndUpdateAvatar(result.uri);
     }
   };
-  const onEditAvatar = () => {
-    showActionSheetWithOptions(
-      {
-        options: ["Camera", "Image Library", "Cancel"],
-        cancelButtonIndex: 2,
-      },
-      (buttonIndex) => {
-        console.log(buttonIndex);
-        if (buttonIndex === 0) {
-          handleCamera();
-        } else if (buttonIndex === 1) {
-        } else if (buttonIndex === 2) {
+
+  const handleLibrary = async () => {
+    if (Platform.OS !== "web") {
+      let permissions = await ImagePicker.getMediaLibraryPermissionsAsync();
+      if (!permissions.granted) {
+        const { status } =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          alert("Sorry, we need media library to make this work!");
         }
       }
-    );
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+    if (!result.cancelled) {
+      console.log(result);
+      setImageURI(result.uri);
+      uploadAndUpdateAvatar(result.uri);
+    }
   };
+
+  const uploadAndUpdateAvatar = async (imageURI) => {
+    try {
+      const filename = imageURI.substring(imageURI.lastIndexOf("/") + 1);
+      const response = await fetch(imageURI);
+      const blob = await response.blob();
+
+      const uploadTask = firebase
+        .storage()
+        .ref(user.uid + "/" + filename) // unique path
+        .put(blob);
+      // set progress state
+      uploadTask.on("state_changed", (snapshot) => {
+        // Can keep track of upload progress here
+        // setTransferred(
+        //   Math.round(snapshot.bytesTransferred / snapshot.totalBytes) * 10000
+        // );
+      });
+
+      await uploadTask;
+      let downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+      console.log(downloadURL);
+      user.updateProfile({
+        photoURL: downloadURL,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {user ? (
